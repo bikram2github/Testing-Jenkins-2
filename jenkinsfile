@@ -1,0 +1,60 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout Code') {
+            steps {
+                git branch: 'main', url: 'https://github.com/bikram2github/Testing-Jenkins-2.git'
+            }
+        }
+
+        stage('Create Virtual Environment') {
+            steps {
+                bat '"C:\\Users\\bikra\\AppData\\Local\\Programs\\Python\\Python311\\python.exe" -m venv venv'
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                bat 'venv\\Scripts\\python -m pip install --upgrade pip'
+                bat 'venv\\Scripts\\python -m pip install -r requirements.txt'
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                bat 'venv\\Scripts\\python -m pytest'
+            }
+        }
+
+        stage('Train Model') {
+            steps {
+                bat 'venv\\Scripts\\python train.py'
+            }
+        }
+
+        stage('Archive Artifacts') {
+            steps {
+                archiveArtifacts artifacts: 'artifacts/**', fingerprint: true
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                bat 'docker build -t aiml-fastapi:latest .'
+            }
+        }
+
+        stage('Stop Old Container') {
+            steps {
+                bat 'docker rm -f aiml-fastapi || exit 0'
+            }
+        }
+
+        stage('Run Docker Container') {
+            steps {
+                bat 'docker run -d -p 8000:8000 --name aiml-fastapi aiml-fastapi:latest'
+            }
+        }
+    }
+}
